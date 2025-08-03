@@ -30,8 +30,8 @@ jobs:
               yum -y update && \
               yum -y groupinstall 'Development Tools' && \
               yum -y install openssl-devel libstdc++-devel python2 && \
-              python2 buildscripts/scons.py --ssl --dbg --clean mongod MONGO_VERSION=3.2.22 -j 8 && \
-              python2 buildscripts/scons.py --ssl --dbg mongod MONGO_VERSION=3.2.22 -j 8\
+              python2 buildscripts/scons.py --ssl --dbg --clean mongod MONGO_VERSION=3.2.22 --link-model=static -j 8 && \
+              python2 buildscripts/scons.py --ssl --dbg mongod MONGO_VERSION=3.2.22 --link-model=static -j 8\
             "
 
       - name: 上传构建产物
