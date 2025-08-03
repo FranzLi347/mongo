@@ -1,4 +1,3 @@
-# .github/workflows/centos7-build.yml
 name: Build on CentOS 7 via Docker
 
 on:
@@ -15,15 +14,6 @@ jobs:
       - name: Checkout 源码
         uses: actions/checkout@v3
 
-      - name: 下载源码 Artifact
-        uses: actions/download-artifact@v4
-        # with:
-        #   name: source
-        #   path: .
-
-      # 如果你不需要 upload/download-artifact，直接删掉上面这块，
-      # checkout 完了以后源码就已经在 $GITHUB_WORKSPACE 里了。
-
       - name: 在 CentOS 7 容器里编译 MongoDB
         run: |
           docker run --rm \
@@ -31,10 +21,17 @@ jobs:
             -w /workspace \
             centos:7 \
             bash -lc "\
+              # 修复官方镜像已迁移到 vault.centos.org 的仓库 URL
+              sed -i \
+                -e 's|^mirrorlist=|#mirrorlist=|g' \
+                -e 's|^#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g' \
+                /etc/yum.repos.d/CentOS-*.repo && \
               yum -y update && \
               yum -y groupinstall 'Development Tools' && \
               yum -y install openssl-devel libstdc++-devel python2 centos-release-scl devtoolset-8 && \
+              # 启用新版 GCC
               source /opt/rh/devtoolset-8/enable && \
+              # 清理并编译
               python2 buildscripts/scons.py --ssl --dbg --clean mongod && \
               python2 buildscripts/scons.py --ssl --dbg mongod\
             "
