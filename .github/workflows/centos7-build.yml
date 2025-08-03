@@ -1,4 +1,4 @@
-name: Build on CentOS 7 via Docker
+name: Build on CentOS 7 via Docker (OpenSSL 静态链接)
 
 on:
   push:
@@ -14,7 +14,7 @@ jobs:
       - name: Checkout 源码
         uses: actions/checkout@v3
 
-      - name: 在 CentOS 7 容器里并行静态编译 MongoDB（包含 libssl）
+      - name: 在 CentOS 7 容器里并行静态编译 MongoDB（OpenSSL 静态）
         run: |
           docker run --rm \
             -v "${{ github.workspace }}":/workspace \
@@ -26,27 +26,21 @@ jobs:
                 -e 's|^mirrorlist=|#mirrorlist=|g' \
                 -e 's|^#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g' \
                 /etc/yum.repos.d/CentOS-*.repo && \
-              # 安装开发工具链及 OpenSSL 静态库
+              # 安装工具链及 OpenSSL 静态库
               yum -y update && \
               yum -y groupinstall 'Development Tools' && \
-              yum -y install openssl-devel openssl-static libstdc++-devel python2 && \
-              # 获取并行任务数
-              JOBS=$(nproc) && echo \"Using $JOBS jobs\" && \
-              # 清理并静态链接
+              yum -y install openssl-devel openssl-static libstdc++-devel python2 git && \
+              # 并行任务数
+              JOBS=$(nproc) && echo \"Using $JOBS jobs for scons\" && \
+              # 编译：--link-model=static 静态链接 C++ 库，LINKFLAGS 强制静态链接 libssl/libcrypto
               python2 buildscripts/scons.py \
-                --ssl --ssl-static \
+                --ssl \
                 --link-model=static \
                 --dbg \
                 mongod \
                 MONGO_VERSION=3.2.22 \
-                -j 8 && \
-              python2 buildscripts/scons.py \
-                --ssl --ssl-static \
-                --link-model=static \
-                --dbg \
-                mongod \
-                MONGO_VERSION=3.2.22 \
-                -j 8\
+                LINKFLAGS=\"-Wl,-Bstatic -lssl -lcrypto -Wl,-Bdynamic\" \
+                -j $JOBS\
             "
 
       - name: 上传静态编译产物
