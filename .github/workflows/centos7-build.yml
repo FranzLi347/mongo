@@ -1,5 +1,5 @@
 # .github/workflows/centos7-build.yml
-name: Build on CentOS7 (split jobs)
+name: Build on CentOS 7 via Docker
 
 on:
   push:
@@ -7,43 +7,34 @@ on:
   pull_request:
   workflow_dispatch:
 
-permissions:
-  contents: read
-  packages: read
-  id-token: write
-
 jobs:
-  checkout:
+  build:
     runs-on: ubuntu-latest
-    outputs:
-      src-path: ${{ github.workspace }}
+
     steps:
       - name: Checkout 源码
         uses: actions/checkout@v3
 
-      - name: 打包源码 Artifact
-        uses: actions/upload-artifact@v4   # <- 升级到 v4
-        with:
-          name: source
-          path: .
-
-  build:
-    needs: checkout
-    runs-on: ubuntu-latest
-    container:
-      image: centos:7
-    steps:
       - name: 下载源码 Artifact
-        uses: actions/download-artifact@v4  
-        with:
-          name: source
-          path: .
+        uses: actions/download-artifact@v4
+        # with:
+        #   name: source
+        #   path: .
 
-      - name: 安装依赖并编译
+      # 如果你不需要 upload/download-artifact，直接删掉上面这块，
+      # checkout 完了以后源码就已经在 $GITHUB_WORKSPACE 里了。
+
+      - name: 在 CentOS 7 容器里编译 MongoDB
         run: |
-          yum -y update
-          yum -y groupinstall "Development Tools"
-          yum -y install openssl-devel libstdc++-devel python2 centos-release-scl devtoolset-8
-          source /opt/rh/devtoolset-8/enable
-          python2 buildscripts/scons.py --ssl --dbg --clean mongod
-          python2 buildscripts/scons.py --ssl --dbg mongod
+          docker run --rm \
+            -v "${{ github.workspace }}":/workspace \
+            -w /workspace \
+            centos:7 \
+            bash -lc "\
+              yum -y update && \
+              yum -y groupinstall 'Development Tools' && \
+              yum -y install openssl-devel libstdc++-devel python2 centos-release-scl devtoolset-8 && \
+              source /opt/rh/devtoolset-8/enable && \
+              python2 buildscripts/scons.py --ssl --dbg --clean mongod && \
+              python2 buildscripts/scons.py --ssl --dbg mongod\
+            "
