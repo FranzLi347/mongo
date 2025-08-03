@@ -1,31 +1,43 @@
-# .github/workflows/centos7-build.yml
-name: v3.2 build
+name: Build on CentOS7 (split jobs)
 
 on:
   push:
-    branches: [ v3.2 ]
+    branches: [ main, v3.2 ]
   pull_request:
   workflow_dispatch:
 
 jobs:
+  checkout:
+    runs-on: ubuntu-latest
+    outputs:
+      src-path: ${{ github.workspace }}
+    steps:
+      - name: Checkout 源码
+        uses: actions/checkout@v3
+
+      - name: 打包源码 Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: source
+          path: .
+
   build:
+    needs: checkout
     runs-on: ubuntu-latest
     container:
       image: centos:7
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
+      - name: 下载源码 Artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: source
+          path: .
 
-      - name: 安装系统依赖
+      - name: 安装依赖并编译
         run: |
           yum -y update
           yum -y groupinstall "Development Tools"
           yum -y install openssl-devel libstdc++-devel python2 centos-release-scl devtoolset-8
-
-      - name: 编译 MongoDB
-        run: |
-          # 在同一个命令里用 bash -lc 以登录 shell 方式启用 devtoolset-8
-          bash -lc "source /opt/rh/devtoolset-8/enable && \
-                    python2 buildscripts/scons.py --ssl --dbg --clean mongod && \
-                    python2 buildscripts/scons.py --ssl --dbg mongod"
+          source /opt/rh/devtoolset-8/enable
+          python2 buildscripts/scons.py --ssl --dbg --clean mongod
+          python2 buildscripts/scons.py --ssl --dbg mongod
