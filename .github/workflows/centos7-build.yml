@@ -1,3 +1,4 @@
+# .github/workflows/centos7-build.yml
 name: Build on CentOS7 (split jobs)
 
 on:
@@ -5,6 +6,11 @@ on:
     branches: [ main, v3.2 ]
   pull_request:
   workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: read
+  id-token: write
 
 jobs:
   checkout:
@@ -16,7 +22,7 @@ jobs:
         uses: actions/checkout@v3
 
       - name: 打包源码 Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4   # <- 升级到 v4
         with:
           name: source
           path: .
@@ -28,7 +34,7 @@ jobs:
       image: centos:7
     steps:
       - name: 下载源码 Artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4  
         with:
           name: source
           path: .
