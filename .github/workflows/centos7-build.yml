@@ -1,0 +1,31 @@
+# .github/workflows/centos7-build.yml
+name: v3.2 build
+
+on:
+  push:
+    branches: [ v3.2 ]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: centos:7
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: 安装系统依赖
+        run: |
+          yum -y update
+          yum -y groupinstall "Development Tools"
+          yum -y install openssl-devel libstdc++-devel python2 centos-release-scl devtoolset-8
+
+      - name: 编译 MongoDB
+        run: |
+          # 在同一个命令里用 bash -lc 以登录 shell 方式启用 devtoolset-8
+          bash -lc "source /opt/rh/devtoolset-8/enable && \
+                    python2 buildscripts/scons.py --ssl --dbg --clean mongod && \
+                    python2 buildscripts/scons.py --ssl --dbg mongod"
