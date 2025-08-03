@@ -40,7 +40,7 @@ jobs:
                 mongod \
                 MONGO_VERSION=3.2.22 \
                 LINKFLAGS=\"-Wl,-Bstatic -lssl -lcrypto -Wl,-Bdynamic\" \
-                -j $JOBS\
+                -j 8\
             "
 
       - name: 上传静态编译产物
