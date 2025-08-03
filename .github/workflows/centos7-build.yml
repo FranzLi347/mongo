@@ -1,4 +1,3 @@
-# .github/workflows/centos7-build.yml
 name: Build on CentOS 7 via Docker
 
 on:
@@ -12,33 +11,31 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout 源码（含完整 Git 历史 & tags）
+      - name: Checkout 源码
         uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
 
-      - name: 在 CentOS 7 容器里编译 MongoDB
+      - name: 在 CentOS 7 容器里并行编译 MongoDB
         run: |
           docker run --rm \
             -v "${{ github.workspace }}":/workspace \
             -w /workspace \
             centos:7 \
             bash -lc "\
-              # 修复 yum 仓库到 vault.centos.org
+              # 修复老旧镜像仓库到 vault.centos.org
               sed -i \
                 -e 's|^mirrorlist=|#mirrorlist=|g' \
                 -e 's|^#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g' \
                 /etc/yum.repos.d/CentOS-*.repo && \
-              # 安装工具链
+              # 安装开发工具链
               yum -y update && \
               yum -y groupinstall 'Development Tools' && \
-              yum -y install openssl-devel libstdc++-devel python2 git && \
-              # 推断版本号
-              VER=$(git describe --tags --abbrev=0 | sed 's/^r//') && \
-              echo \"Building MongoDB version $VER\" && \
-              # 清理并编译
-              python2 buildscripts/scons.py --ssl --dbg --clean mongod MONGO_VERSION=$VER && \
-              python2 buildscripts/scons.py --ssl --dbg mongod MONGO_VERSION=$VER\
+              yum -y install openssl-devel libstdc++-devel python2 && \
+              # 取出并行线程数
+              JOBS=$(nproc) && \
+              echo \"Using $JOBS parallel jobs for scons\" && \
+              # 清理并使用 -j 参数并行编译
+              python2 buildscripts/scons.py --ssl --dbg --clean mongod MONGO_VERSION=3.2.22 -j $JOBS && \
+              python2 buildscripts/scons.py --ssl --dbg mongod MONGO_VERSION=3.2.22 -j $JOBS\
             "
 
       - name: 上传构建产物
@@ -46,6 +43,5 @@ jobs:
         with:
           name: mongod-debug
           path: |
-            **/mongod       # 任意目录下的 mongod 二进制
-            mongod          # 也可匹配到根目录下的 mongod
-
+            **/mongod
+            mongod
