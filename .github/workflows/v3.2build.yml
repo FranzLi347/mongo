@@ -1,5 +1,5 @@
 # .github/workflows/centos7-build.yml
-name: Build on CentOS 7
+name: v3.2 build
 
 on:
   push:
