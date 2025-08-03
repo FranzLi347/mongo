@@ -31,6 +31,6 @@ jobs:
               yum -y groupinstall 'Development Tools' && \
               yum -y install openssl-devel libstdc++-devel python2 && \
               # 3) 清理旧构建并编译
-              python2 buildscripts/scons.py --ssl --dbg --clean mongod MONGO_VERSION=3.2 && \
-              python2 buildscripts/scons.py --ssl --dbg mongod MONGO_VERSION=3.2\
+              python2 buildscripts/scons.py --ssl --dbg --clean mongod MONGO_VERSION=3.2.22 && \
+              python2 buildscripts/scons.py --ssl --dbg mongod MONGO_VERSION=3.2.22 \
             "
