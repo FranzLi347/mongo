@@ -30,12 +30,8 @@ jobs:
               yum -y update && \
               yum -y groupinstall 'Development Tools' && \
               yum -y install openssl-devel libstdc++-devel python2 && \
-              # 取出并行线程数
-              JOBS=$(nproc) && \
-              echo \"Using $JOBS parallel jobs for scons\" && \
-              # 清理并使用 -j 参数并行编译
-              python2 buildscripts/scons.py --ssl --dbg --clean mongod MONGO_VERSION=3.2.22 -j $JOBS && \
-              python2 buildscripts/scons.py --ssl --dbg mongod MONGO_VERSION=3.2.22 -j $JOBS\
+              python2 buildscripts/scons.py --ssl --dbg --clean mongod MONGO_VERSION=3.2.22 -j 8 && \
+              python2 buildscripts/scons.py --ssl --dbg mongod MONGO_VERSION=3.2.22 -j 8\
             "
 
       - name: 上传构建产物
